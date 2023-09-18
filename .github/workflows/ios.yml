@@ -57,8 +57,8 @@ jobs:
         uses: yukiarrr/ios-build-action@v1.4.0
         with:
           project-path: ios/aslanpay_mobile.xcodeproj
-          p12-base64: ${{ secrets.P12_BASE64 }}
-          mobileprovision-base64: ${{ secrets.MOBILE_PROVISION_BASE64 }}
+          p12-base64: ${{ secrets.P12_B64 }}
+          mobileprovision-base64: ${{ secrets.MOBILE_PROVISION_B64 }}
           code-signing-identity: 'iPhone Distribution'
           team-id: ${{ secrets.TEAM_ID }}
           certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}

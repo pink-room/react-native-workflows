@@ -60,7 +60,7 @@ jobs:
       #   uses: r0adkll/sign-android-release@v1
       #   with:
       #     releaseDirectory: android/app/build/outputs/apk/release
-      #     signingKeyBase64: ${{ secrets.UPLOAD_KEY }}
+      #     signingKeyBase64: ${{ secrets.UPLOAD_KEY_B64 }}
       #     alias: ${{ secrets.UPLOAD_KEY_ALIAS }}
       #     keyStorePassword: ${{ secrets.UPLOAD_KEY_STORE_PASSWORD }}
       #     keyPassword: ${{ secrets.UPLOAD_KEY_PASSWORD }}
@@ -74,7 +74,7 @@ jobs:
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/bundle/release
-          signingKeyBase64: ${{ secrets.UPLOAD_KEY }}
+          signingKeyBase64: ${{ secrets.UPLOAD_KEY_B64 }}
           alias: ${{ secrets.UPLOAD_KEY_ALIAS }}
           keyStorePassword: ${{ secrets.UPLOAD_KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.UPLOAD_KEY_PASSWORD }}

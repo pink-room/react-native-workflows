@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Lint Check and Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: actions/setup-node@master
+      - uses: c-hive/gha-yarn-cache@v1
+
+      - name: Install node modules
+        run: |
+          yarn install
+
+      - name: Run linter and typecheck
+        run: |
+          yarn validate
+
+      - name: Run test
+        run: |
+          yarn test

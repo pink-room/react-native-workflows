@@ -57,11 +57,11 @@ jobs:
         uses: yukiarrr/ios-build-action@v1.4.0
         with:
           project-path: ios/aslanpay_mobile.xcodeproj
-          p12-base64: ${{ secrets.IOS_P12_BASE64 }}
-          mobileprovision-base64: ${{ secrets.IOS_DEV_MOBILE_PROVISION_BASE64 }}
+          p12-base64: ${{ secrets.P12_BASE64 }}
+          mobileprovision-base64: ${{ secrets.MOBILE_PROVISION_BASE64 }}
           code-signing-identity: 'iPhone Distribution'
-          team-id: ${{ secrets.IOS_TEAM_ID }}
-          certificate-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          team-id: ${{ secrets.TEAM_ID }}
+          certificate-password: ${{ secrets.CERTIFICATE_PASSWORD }}
           workspace-path: ios/aslanpay_mobile.xcworkspace
           scheme: AslanDevRelease
 
@@ -69,6 +69,6 @@ jobs:
         uses: apple-actions/upload-testflight-build@v1
         with:
           app-path: 'output.ipa'
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          issuer-id: ${{ secrets.ISSUER_ID }}
+          api-key-id: ${{ secrets.API_KEY_ID }}
+          api-private-key: ${{ secrets.API_PRIVATE_KEY }}

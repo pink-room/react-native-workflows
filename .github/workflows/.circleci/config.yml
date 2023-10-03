@@ -1,0 +1,208 @@
+version: 2.1
+orbs:
+  node: circleci/node@4.0.0
+  android: circleci/android@2.3.0
+
+commands:
+  setup_project:
+    steps:
+      - checkout
+      - restore_cache:
+          key: yarn-packages-{{ checksum "yarn.lock" }}-{{arch}}
+      - run:
+          name: install modules
+          command: yarn install --frozen-lockfile --cache-folder ~/.cache/yarn
+      - save_cache:
+          key: yarn-packages-{{ checksum "yarn.lock" }}-{{arch}}
+          paths:
+            - ~/.cache/yarn
+
+  setup_pods:
+    steps:
+      - restore_cache:
+          key: pods-v2-{{ checksum "./ios/Podfile.lock" }}
+      - run:
+          name: update pods
+          command: pod repo update
+
+      - run:
+          name: install pods
+          command: npx pod-install
+
+      - save_cache:
+          key: pods-v2-{{ checksum "./ios/Podfile.lock" }}
+          paths:
+            - ios/Pods
+
+  # setup_env:
+  #   steps:
+  #     - run: echo $ANDROID_KEY_JSON_BASE_64 | base64 -d > ./android/key.json
+
+  #     - run: echo $ANDROID_RELEASE_KEYSTORE_BASE_64 | base64 -d > ./android/release-key.keystore
+
+  ios_setup_fastlane:
+    steps:
+      - restore_cache:
+          key: gems-v1-{{ checksum "./ios/Gemfile.lock" }}
+
+      - run:
+          name: install bundler
+          command: bundle install --path vendor/bundle
+          working_directory: ./ios/
+
+      - save_cache:
+          key: gems-v1-{{ checksum "./ios/Gemfile.lock" }}
+          paths:
+            - ios/vendor/bundle
+
+  android_setup_fastlane:
+    steps:
+      - restore_cache:
+          key: gems-v1-{{ checksum "./android/Gemfile.lock" }}
+
+      - run:
+          name: install bundler
+          command: bundle install --path vendor/bundle
+          working_directory: ./android/
+
+      - save_cache:
+          key: gems-v1-{{ checksum "./android/Gemfile.lock" }}
+          paths:
+            - ./android/vendor/bundle
+
+executors:
+  macos:
+    macos:
+      xcode: 14.3.0
+    resource_class: macos.x86.medium.gen2
+  node:
+    docker:
+      - image: cimg/node:20.1.0
+  node-android:
+    docker:
+      - image: reactnativecommunity/react-native-android
+    environment:
+        -_JAVA_OPTIONS: '-Xmx1024m -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport'
+        -GRADLE_OPTS: -Xmx2014m -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+UnlockExperimentalVMOptions -XX:+HeapDumpOnOutOfMemoryError"
+    resource_class: medium
+
+jobs:
+  ios-build-and-upload:
+    executor: macos
+    steps:
+      - setup_project
+      - setup_pods
+      # - setup_env
+      - attach_workspace:
+          at: .
+      - ios_setup_fastlane
+      - run:
+          name: build and upload
+          command: bundle exec fastlane release
+          working_directory: ./ios/
+      - store_artifacts:
+          path: output
+      - store_test_results:
+          path: output/scan
+
+  android-build-and-upload:
+    executor: node-android
+    steps:
+      - setup_project
+      # - setup_env
+      - attach_workspace:
+          at: .
+      - android_setup_fastlane
+      - run:
+          name: build and upload
+          command: bundle exec fastlane release
+          working_directory: ./android/
+      - store_artifacts:
+          path: output
+      - store_test_results:
+          path: output/scan
+
+  ios-binary-build:
+    executor: macos
+    steps:
+      - setup_project
+      - setup_pods
+      - attach_workspace:
+          at: .
+      - run:
+          name: binary build
+          command: |
+            xcodebuild build -workspace "./ios/xcodeclouddemo.xcworkspace" -scheme "xcodeclouddemoRelease" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
+  android-binary-build:
+    executor: node-android
+    steps:
+      - setup_project
+      # - setup_env
+      - attach_workspace:
+          at: .
+      - run:
+          name: binary build
+          working_directory: ./android/
+          command: |
+            ./gradlew clean 
+            ./gradlew bundleRelease
+
+  test:
+    executor: node
+    steps:
+      - setup_project
+      - attach_workspace:
+          at: .
+      - run:
+          name: run validations
+          command: yarn validate
+      - run:
+          name: run tests
+          command: yarn test
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - test:
+          filters:
+            branches:
+              ignore:
+                - /^release/
+      - ios-binary-build:
+          requires:
+            - test
+          filters:
+            branches:
+              ignore:
+                - /^release/
+      - android-binary-build:
+          requires:
+            - test
+          filters:
+            branches:
+              ignore:
+                - /^release/
+
+  build-and-upload:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only:
+                - /^release/
+      - ios-build-and-upload:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - /^release/
+      - android-build-and-upload:
+          requires:
+            - test
+          filters:
+            branches:
+                only:
+                  - /^release/
